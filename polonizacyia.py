@@ -79,16 +79,18 @@ def polonize_char(c, flags):
 
     if c == "ь":
         if DZ_IOT in flags or RZ_IOT in flags:
-            if IS_LAST in flags:
-                return "z"
+            if IS_LAST in flags or RZ_IOT in flags:
+                return "z", IS_FIRST
 
-            else:
-                return "zj", IOT_DROPPING
+            return "zi", IS_FIRST
 
         if IOT_DROPPING in flags:
             return ""
 
-        return "j", IOT_DROPPING
+        if IS_LAST in flags:
+            return "j"
+        else:
+            return "i", IS_FIRST
 
     # IOTIZED
     if c == "е":
@@ -138,10 +140,12 @@ def polonize_word(word):
     # -ой  =>  -oi
     # -ий  =>  -i
 
-    word = re.sub(r"ая$", "a", word)
-    word = re.sub(r"ой$", "oi", word)  # imperatives should end in -oj, e.g. (дай daj)
-    word = re.sub(r"ий$", "i", word)
-    word = re.sub(r"ый$", "y", word)
+    word = re.sub(r"ая$", "а", word)
+    word = re.sub(r"ый$", "ы", word)
+
+    word = re.sub(r"ия$", "ья", word)
+    word = re.sub(r"ий$", "и", word)
+    word = re.sub(r"ие$", "ье", word)
 
     flags = [IS_FIRST]
     for i, c in enumerate(word):
@@ -202,7 +206,7 @@ def tokenize(iterable):
         for word, word_type in grouped
     )
 
-def latinize(tokens):
+def polonize(tokens):
     for word, word_type, cap_map in tokens:
         if word_type == CYRILLIC:
             yield (polonize_word(word), cap_map)
@@ -214,11 +218,15 @@ def render(tokens):
         for char, cap in zip(word, cap_map):
             yield char.capitalize() if cap.isupper() else char
 
+def process(iterable):
+    tokens = tokenize(iterable)
+    pol_tokens = polonize(tokens)
+    polonized = render(pol_tokens)
+    return polonized
+
 def main():
-    tokens = tokenize(stdin)
-    lat_tokens = latinize(tokens)
-    latinized = render(lat_tokens)
-    print(str_sum(latinized))
+    print(str_sum(process(stdin)))
+
 
 if __name__ == '__main__':
     main()
