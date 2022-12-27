@@ -1,7 +1,7 @@
 #!.venv/bin/python3
 
 from flask import Flask, send_from_directory, request
-import polonizacyia
+import polonizacyja
 
 app = Flask(__name__, static_folder="")
 
@@ -15,7 +15,7 @@ def send_texts(path):
 
 @app.route("/trans", methods=['POST'])
 def trans():
-    return polonizacyia.process([request.get_json()])
+    return polonizacyja.process([request.get_json()])
 
 
 if __name__ == '__main__':
