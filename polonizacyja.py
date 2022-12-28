@@ -6,18 +6,16 @@ from sys import stdin
 from itertools import chain, groupby
 
 BASIC_CONSONANTS = dict(zip("бвгзкмнпстф", "bwgzkmnpstf"))
+POLISH_EXCEPTIONS = dict(zip("длр", "dlr"))
 ALWAYS_SOFT_CONSONANTS = {
     'ж': 'ż', 'х': 'ch', 'ц': 'c', 'ч': 'cz', 'ш': 'sz', 'щ': 'szcz'}
+SERBIAN_ALWAYS_SOFT_CONSONANTS = {
+    'ж': 'ž', 'х': 'h', 'ц': 'c', 'ч': 'č', 'ш': 'š', 'щ': 'šč'}
 BASIC_VOWELS = dict(zip("аоуэы", "aouey"))
 IOTIZED_VOWELS = dict(zip("яёюе", "aoue"))
 
-TRANS = {
-    **BASIC_CONSONANTS,
-    **ALWAYS_SOFT_CONSONANTS,
-    **BASIC_VOWELS,
-    **IOTIZED_VOWELS}
-
-def polonize_word(word):
+def polonize_word(word, polish_exceptions=True,
+                  serbian_always_soft_consonants=False):
     """
     >>> str_sum(polonize_word("андрей"))
     'andrzej'
@@ -43,6 +41,9 @@ def polonize_word(word):
     >>> str_sum(polonize_word("володька"))  # Wołodźko
     'wołodźka'
 
+    >>> str_sum(polonize_word("володька", polish_exceptions=False))
+    'wolodika'
+
     >>> str_sum(polonize_word("лес"))
     'les'
 
@@ -52,11 +53,14 @@ def polonize_word(word):
     >>> str_sum(polonize_word("бюргер"))
     'biurgier'
 
-    >>> str_sum(polonize_word("чо"))
-    'czo'
+    >>> str_sum(polonize_word("чёрт"))
+    'czort'
 
     >>> str_sum(polonize_word("чьё"))
     'czjo'
+
+    >>> str_sum(polonize_word("чужой", serbian_always_soft_consonants=True))
+    'čužoj'
 
     >>> str_sum(polonize_word("папайя"))
     'papaja'
@@ -84,25 +88,33 @@ def polonize_word(word):
     word = re.sub(r"ый$", "ы", word)
     word = re.sub(r"ий$", "и", word)
 
-    w = WordIterator(word)
+    trans = {
+        **BASIC_CONSONANTS,
+        **POLISH_EXCEPTIONS,
+        **(SERBIAN_ALWAYS_SOFT_CONSONANTS if serbian_always_soft_consonants
+           else ALWAYS_SOFT_CONSONANTS),
+        **BASIC_VOWELS,
+        **IOTIZED_VOWELS}
+
+    w = WordIterator(word, polish_exceptions=polish_exceptions)
     while w.iterate():
         if w.is_basic_vowel:
-            yield TRANS[w.c]
+            yield trans[w.c]
 
         elif w.is_iotized_vowel:
-            yield "j" + TRANS[w.c]
+            yield "j" + trans[w.c]
 
         elif w.is_i:
             yield "i"
 
         elif w.is_basic_consonant:
             if w.next_is_iotized_vowel:  # this excludes и
-                yield TRANS[w.c] + "i"
+                yield trans[w.c] + "i"
                 w.iterate()
-                yield TRANS[w.c]
+                yield trans[w.c]
 
             else:
-                yield TRANS[w.c]
+                yield trans[w.c]
 
                 if w.next_is_soft_sign:
                     w.iterate()
@@ -115,7 +127,7 @@ def polonize_word(word):
             if w.next_is_iotized_vowel:  # this excludes и
                 yield "dzi"
                 w.iterate()
-                yield TRANS[w.c]
+                yield trans[w.c]
 
             elif w.next_is_i:
                 yield "dz"
@@ -130,6 +142,19 @@ def polonize_word(word):
                     else:
                         yield "zi"
 
+        elif w.is_l:
+            if w.next_is_iotized_vowel or w.next_is_i or w.next_is_soft_sign:
+                yield "l"
+                if w.next_is_iotized_vowel:
+                    w.iterate()
+                    yield trans[w.c]
+
+                if w.next_is_soft_sign:
+                    w.iterate()
+
+            else:
+                yield "ł"
+
         elif w.is_r:
             if w.next_is_iotized_vowel or w.next_is_i:
                 yield "rz"
@@ -137,7 +162,7 @@ def polonize_word(word):
                 if w.is_i:
                     yield "y"
                 else:
-                    yield TRANS[w.c]
+                    yield trans[w.c]
                 continue
 
             yield "r"
@@ -146,21 +171,8 @@ def polonize_word(word):
                 w.iterate()
                 yield "z"
 
-        elif w.is_l:
-            if w.next_is_iotized_vowel or w.next_is_i or w.next_is_soft_sign:
-                yield "l"
-                if w.next_is_iotized_vowel:
-                    w.iterate()
-                    yield TRANS[w.c]
-
-                if w.next_is_soft_sign:
-                    w.iterate()
-
-            else:
-                yield "ł"
-
         elif w.is_always_soft_consonant:
-            yield TRANS[w.c]
+            yield trans[w.c]
 
             if w.next_is_soft_sign or w.next_is_iotized_vowel or w.next_is_i:
                 if w.next_is_soft_sign:
@@ -170,7 +182,7 @@ def polonize_word(word):
 
                 if w.next_is_iotized_vowel:
                     w.iterate()
-                    yield TRANS[w.c]
+                    yield trans[w.c]
 
                 elif w.next_is_i:
                     w.iterate()
@@ -181,13 +193,11 @@ def polonize_word(word):
 
             if w.next_is_iotized_vowel:
                 w.iterate()
-                yield TRANS[w.c]
+                yield trans[w.c]
 
             elif w.next_is_i:
                 w.iterate()
                 yield 'y'
-
-
 
         else:
             yield w.c
@@ -205,7 +215,8 @@ class WordIterator(object):
     >>> w.c
     'е'
     """
-    def __init__(self, word):
+    def __init__(self, word, polish_exceptions=True):
+        self.polish_exceptions = polish_exceptions
         self.word = word
         self.i = None
 
@@ -219,21 +230,25 @@ class WordIterator(object):
     is_iotized_vowel = property(lambda s: s.c in IOTIZED_VOWELS)
     next_is_iotized_vowel = property(lambda s: s.next in IOTIZED_VOWELS)
     is_basic_vowel = property(lambda s: s.c in BASIC_VOWELS)
-    is_d = property(lambda s: s.c == "д")
-    is_r = property(lambda s: s.c == "р")
-    is_l = property(lambda s: s.c == "л")
     is_i = property(lambda s: s.c == "и")
     next_is_i = property(lambda s: s.next == "и")
     is_i_short = property(lambda s: s.c == "й")
     is_soft_sign = property(lambda s: s.c == "ь")
     next_is_soft_sign = property(lambda s: s.next == "ь")
     is_hard_sign = property(lambda s: s.c == "ъ")
-    is_basic_consonant = property(lambda s: s.c in BASIC_CONSONANTS)
+    is_basic_consonant = property(
+        lambda s:
+            not s.polish_exceptions and s.c in POLISH_EXCEPTIONS or
+            s.c in BASIC_CONSONANTS
+    )
+    is_d = property(lambda s: s.polish_exceptions and s.c == "д")
+    is_l = property(lambda s: s.polish_exceptions and s.c == "л")
+    is_r = property(lambda s: s.polish_exceptions and s.c == "р")
     next_is_consonant = property(
         lambda s:
             s.next in BASIC_CONSONANTS or
-            s.next in ALWAYS_SOFT_CONSONANTS or
-            s.next in ("д", "р", "л"))
+            s.next in POLISH_EXCEPTIONS or
+            s.next in ALWAYS_SOFT_CONSONANTS)
     is_always_soft_consonant = property(lambda s: s.c in ALWAYS_SOFT_CONSONANTS)
 
 def str_sum(strs):
