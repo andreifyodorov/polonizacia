@@ -76,18 +76,19 @@ def polonize_word(word, polish_exceptions=True,
     'połonizacyja'
 
     """
-    if word == "от":
-        yield from "od"
-        return
+    if polish_exceptions:
+        if word == "от":
+            yield from "od"
+            return
 
-    if word in ("с", "из"):
-        yield "z"
-        return
+        if word in ("с", "из"):
+            yield "z"
+            return
 
-    # adjective ending reduction
-    word = re.sub(r"ая$", "а", word)
-    word = re.sub(r"ый$", "ы", word)
-    word = re.sub(r"ий$", "и", word)
+        # adjective ending reduction
+        word = re.sub(r"ая$", "а", word)
+        word = re.sub(r"ый$", "ы", word)
+        word = re.sub(r"ий$", "и", word)
 
     trans = {
         **BASIC_CONSONANTS,
