@@ -14,6 +14,7 @@ SERBIAN_ALWAYS_SOFT_CONSONANTS = {
 BASIC_VOWELS = dict(zip("аоуэы", "aouey"))
 IOTIZED_VOWELS = dict(zip("яёюе", "aoue"))
 
+
 def polonize_word(word, polish_exceptions=True,
                   serbian_always_soft_consonants=False):
     """
@@ -202,6 +203,7 @@ def polonize_word(word, polish_exceptions=True,
         else:
             yield w.c
 
+
 class WordIterator(object):
     """
     >>> w = WordIterator("тест")
@@ -249,29 +251,35 @@ class WordIterator(object):
             s.next in BASIC_CONSONANTS or
             s.next in POLISH_EXCEPTIONS or
             s.next in ALWAYS_SOFT_CONSONANTS)
-    is_always_soft_consonant = property(lambda s: s.c in ALWAYS_SOFT_CONSONANTS)
+    is_always_soft_consonant = property(
+        lambda s: s.c in ALWAYS_SOFT_CONSONANTS)
+
 
 def str_sum(strs):
     return "".join(strs)
+
 
 CYRILLIC = "CYR"
 LATIN = "LAT"
 PUNCTUATION = "PUNCT"
 
+
 def char_types(iterable):
     for c in chain(*iterable):
-        l = c.lower()
-        if l in 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя':
+        lower = c.lower()
+        if lower in 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя':
             yield c, CYRILLIC
 
-        elif l in 'abcdefghijklmnopqrstuvwxyz':
+        elif lower in 'abcdefghijklmnopqrstuvwxyz':
             yield c, LATIN
 
         else:
             yield c, PUNCTUATION
 
+
 def tokenize(iterable):
-    # split incoming iterable into chars with types (cyrillic, latin, punctuation)
+    # split incoming iterable into chars with types
+    # (cyrillic, latin, punctuation)
     chars = char_types(iterable)
 
     # group chars into words by their type
@@ -294,6 +302,7 @@ def tokenize(iterable):
         for word, word_type in grouped
     )
 
+
 def polonize(tokens, **features):
     for word, word_type, cap_map in tokens:
         if word_type == CYRILLIC:
@@ -301,10 +310,12 @@ def polonize(tokens, **features):
         else:
             yield word, cap_map
 
+
 def render(tokens):
     for word, cap_map in tokens:
         for char, cap in zip(word, cap_map):
             yield char.capitalize() if cap.isupper() else char
+
 
 def process(iterable, **features):
     tokens = tokenize(iterable)
@@ -312,6 +323,7 @@ def process(iterable, **features):
     pol_tokens = list(pol_tokens)
     polonized = render(pol_tokens)
     return polonized
+
 
 def main():
     print(str_sum(process(stdin)))
