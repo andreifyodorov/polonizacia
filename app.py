@@ -15,7 +15,8 @@ def send_texts(path):
 
 @app.route("/trans", methods=['POST'])
 def trans():
-    return polonizacyja.process([request.get_json()])
+    content = request.get_json()
+    return polonizacyja.process(content["text"], **content["flags"])
 
 
 if __name__ == '__main__':

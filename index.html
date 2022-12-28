@@ -15,9 +15,16 @@
     <div class="container">
       <h1>Połonizacyja (opolaczywanije)</h1>
 
-      <div class="mb-3">
-        <label for="cyrillicTextarea" class="form-label">Input cyrillic text in Russian to polonize</label>
-        <textarea class="form-control" id="cyrillicTextarea" rows="10"></textarea>
+      <label for="cyrillicTextarea" class="form-label">Input cyrillic text in Russian to polonize</label>
+
+      <div class="row mb-3">
+        <div class="col">
+          <textarea class="form-control" id="cyrillicTextarea" rows="20"></textarea>
+        </div>
+
+        <div class="col">
+          <textarea class="form-control" id="polonizedTextarea" rows="20"></textarea>
+        </div>
       </div>
 
       <!-- <div class="mb-3">
@@ -34,33 +41,47 @@
       <div class="mb-3">
         <button type="button" class="btn btn-primary" id="transliterateButton">Tołmacz</button>
       </div>
-
-      <div class="mb-3">
-        <textarea class="form-control" id="polonizedTextarea" rows="10"></textarea>
-      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
     <script type="text/javascript">
       $(() => {
-        const textArea = $("#cyrillicTextarea");
+        const cyrillicTextarea = $("#cyrillicTextarea");
         const transliterateButton = $("#transliterateButton");
         const polonizedTextarea = $("#polonizedTextarea");
 
         transliterateButton.click(() => {
+          const request = {
+            text: cyrillicTextarea.val(),
+            flags: {}
+          };
           $.post({
             url: "/trans",
-            data: JSON.stringify(textArea.val()),
+            data: JSON.stringify(request),
             contentType: "application/json"
-          }).done((data) => {
-            polonizedTextarea.val(data);
+          }).done((response) => {
+            polonizedTextarea.val(response);
           });
         });
 
-        $.get("/texts/kolobok.txt", (data) => {
-          textArea.val(data);
+        $.get("/texts/kolobok.txt", data => {
+          cyrillicTextarea.val(data);
           transliterateButton.click();
         });
+
+        ((t1, t2) => {
+          let disabled;
+          [[t1, t2], [t2, t1]].forEach(([t1, t2]) => {
+            let timeout;
+            t1.on("scroll", () => {
+              if (disabled == t1) return;
+              clearTimeout(timeout);
+              disabled = t2;
+              t2.scrollTop(t1.scrollTop());
+              timeout = setTimeout(() => disabled = undefined, 100);
+            });
+          });
+        })(polonizedTextarea, cyrillicTextarea);
       })
     </script>
   </body>
