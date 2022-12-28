@@ -19,6 +19,9 @@ TRANS = {
 
 def polonize_word(word):
     """
+    >>> str_sum(polonize_word("андрей"))
+    'andrzej'
+
     >>> str_sum(polonize_word("конь"))
     'konj'
 
@@ -58,6 +61,9 @@ def polonize_word(word):
     >>> str_sum(polonize_word("папайя"))
     'papaja'
 
+    >>> str_sum(polonize_word("шью"))
+    'szju'
+
     >>> str_sum(polonize_word("подъезд"))
     'podjezd'
 
@@ -80,23 +86,30 @@ def polonize_word(word):
 
     w = WordIterator(word)
     while w.iterate():
-        if w.is_basic_consonant:
-            c = TRANS[w.c]
+        if w.is_basic_vowel:
+            yield TRANS[w.c]
 
+        elif w.is_iotized_vowel:
+            yield "j" + TRANS[w.c]
+
+        elif w.is_i:
+            yield "i"
+
+        elif w.is_basic_consonant:
             if w.next_is_iotized_vowel:  # this excludes и
-                yield c + "i"
+                yield TRANS[w.c] + "i"
                 w.iterate()
                 yield TRANS[w.c]
-                continue
 
-            yield c
+            else:
+                yield TRANS[w.c]
 
-            if w.next_is_soft_sign:
-                w.iterate()
-                if w.is_last:
-                    yield "j"
-                else:
-                    yield "i"
+                if w.next_is_soft_sign:
+                    w.iterate()
+                    if w.is_last:
+                        yield "j"
+                    else:
+                        yield "i"
 
         elif w.is_d:
             if w.next_is_iotized_vowel:  # this excludes и
@@ -119,8 +132,12 @@ def polonize_word(word):
 
         elif w.is_r:
             if w.next_is_iotized_vowel or w.next_is_i:
-                w.next_iot_drop = True
                 yield "rz"
+                w.iterate()
+                if w.is_i:
+                    yield "y"
+                else:
+                    yield TRANS[w.c]
                 continue
 
             yield "r"
@@ -131,77 +148,68 @@ def polonize_word(word):
 
         elif w.is_l:
             if w.next_is_iotized_vowel or w.next_is_i or w.next_is_soft_sign:
-                w.next_iot_drop = not w.next_is_i
+                yield "l"
+                if w.next_is_iotized_vowel:
+                    w.iterate()
+                    yield TRANS[w.c]
+
                 if w.next_is_soft_sign:
                     w.iterate()
-                yield "l"
 
             else:
                 yield "ł"
 
-        elif w.is_basic_vowel:
-            yield TRANS[w.c]
-
         elif w.is_always_soft_consonant:
             yield TRANS[w.c]
 
-            if w.next_is_soft_sign:
-                w.iterate()
-                if not w.is_last:
-                    yield "j"
+            if w.next_is_soft_sign or w.next_is_iotized_vowel or w.next_is_i:
+                if w.next_is_soft_sign:
+                    w.iterate()
+                    if not w.is_last:
+                        yield "j"
 
-            w.next_iot_drop = True
+                if w.next_is_iotized_vowel:
+                    w.iterate()
+                    yield TRANS[w.c]
 
-        elif w.is_i:
-            if w.iot_drop:
-                yield "y"
-
-            else:
-                yield "i"
-
-        elif w.is_iotized_vowel:
-            c = TRANS[w.c]
-            if w.iot_drop:
-                yield c
-
-            else:
-                yield "j" + c
+                elif w.next_is_i:
+                    w.iterate()
+                    yield 'y'
 
         elif w.is_i_short or w.is_hard_sign:
-            w.next_iot_drop = True
             yield "j"
+
+            if w.next_is_iotized_vowel:
+                w.iterate()
+                yield TRANS[w.c]
+
+            elif w.next_is_i:
+                w.iterate()
+                yield 'y'
+
+
 
         else:
             yield w.c
 
 class WordIterator(object):
     """
-    >>> w = WordIterator("test")
-    >>> w.iot_drop
-    False
+    >>> w = WordIterator("тест")
     >>> w.next_iot_drop = True
     >>> w.iterate()
     True
     >>> w.c
-    't'
-    >>> w.iot_drop
-    True
+    'т'
     >>> w.iterate()
     True
-    >>> w.iot_drop
-    False
+    >>> w.c
+    'е'
     """
     def __init__(self, word):
         self.word = word
         self.i = None
 
-        self.next_iot_drop = False
-        self.iot_drop = False
-
     def iterate(self):
-        self.iot_drop = self.next_iot_drop
-        self.next_iot_drop = False
-
         self.i = 0 if self.i is None else self.i + 1
         return self.i < len(self.word)
 
