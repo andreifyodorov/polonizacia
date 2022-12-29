@@ -19,11 +19,11 @@
 
       <div class="row mb-3">
         <div class="col">
-          <textarea class="form-control" id="cyrillicTextarea" rows="20"></textarea>
+          <textarea class="form-control" id="cyrillicTextarea" rows="15"></textarea>
         </div>
 
         <div class="col">
-          <textarea class="form-control" id="polonizedTextarea" rows="20"></textarea>
+          <textarea class="form-control" id="polonizedTextarea" rows="15"></textarea>
         </div>
       </div>
 
@@ -38,6 +38,30 @@
         </div>
       </div> -->
 
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" value="1" id="polishExceptionsCheckbox" checked>
+        <label class="form-check-label" for="polishExceptionsCheckbox">
+          Polish exceptions (rz, dź, ł/l, reduced endings)
+        </label>
+      </div>
+
+      Always-soft consonants set:
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="alwaysSoftConsonant"
+               value="polish" id="alwaysSoftConsonantsPolish" checked>
+        <label class="form-check-label" for="alwaysSoftConsonantsPolish">
+          ż, ch, c, cz, sz, szcz (Polish)
+        </label>
+      </div>
+
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="radio" name="alwaysSoftConsonant"
+               value="serbian" id="alwaysSoftConsonantsSerbian">
+        <label class="form-check-label" for="alwaysSoftConsonantsSerbian">
+          ž, h, c, č, š, šč (Serbian)
+        </label>
+      </div>
+
       <div class="mb-3">
         <button type="button" class="btn btn-primary" id="transliterateButton">Tołmacz</button>
       </div>
@@ -49,11 +73,19 @@
         const cyrillicTextarea = $("#cyrillicTextarea");
         const transliterateButton = $("#transliterateButton");
         const polonizedTextarea = $("#polonizedTextarea");
+        const polishExceptionsCheckbox = $("#polishExceptionsCheckbox");
+        const alwaysSoftConsonantsSerbian = $("#alwaysSoftConsonantsSerbian");
+        const alwaysSoftConsonantsPolish = $("#alwaysSoftConsonantsPolish");
 
         transliterateButton.click(() => {
           const request = {
             text: cyrillicTextarea.val(),
-            flags: {}
+            flags: {
+              polish_exceptions: polishExceptionsCheckbox.is(":checked"),
+              always_soft_consonants:
+                (alwaysSoftConsonantsPolish.is(":checked")
+                  ? "polish" : "serbian"),
+            }
           };
           $.post({
             url: "/trans",

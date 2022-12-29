@@ -13,10 +13,11 @@ SERBIAN_ALWAYS_SOFT_CONSONANTS = {
     'ж': 'ž', 'х': 'h', 'ц': 'c', 'ч': 'č', 'ш': 'š', 'щ': 'šč'}
 BASIC_VOWELS = dict(zip("аоуэы", "aouey"))
 IOTIZED_VOWELS = dict(zip("яёюе", "aoue"))
-
+POLISH = "polish"
+SERBIAN = "serbian"
 
 def polonize_word(word, polish_exceptions=True,
-                  serbian_always_soft_consonants=False):
+                  always_soft_consonants=POLISH):
     """
     >>> str_sum(polonize_word("андрей"))
     'andrzej'
@@ -60,7 +61,7 @@ def polonize_word(word, polish_exceptions=True,
     >>> str_sum(polonize_word("чьё"))
     'czjo'
 
-    >>> str_sum(polonize_word("чужой", serbian_always_soft_consonants=True))
+    >>> str_sum(polonize_word("чужой", always_soft_consonants="serbian"))
     'čužoj'
 
     >>> str_sum(polonize_word("папайя"))
@@ -93,10 +94,20 @@ def polonize_word(word, polish_exceptions=True,
     trans = {
         **BASIC_CONSONANTS,
         **POLISH_EXCEPTIONS,
-        **(SERBIAN_ALWAYS_SOFT_CONSONANTS if serbian_always_soft_consonants
-           else ALWAYS_SOFT_CONSONANTS),
         **BASIC_VOWELS,
         **IOTIZED_VOWELS}
+
+    if always_soft_consonants == SERBIAN:
+        trans.update(SERBIAN_ALWAYS_SOFT_CONSONANTS)
+
+    elif always_soft_consonants == POLISH:
+        trans.update(ALWAYS_SOFT_CONSONANTS)
+
+    else:
+        raise Exception(
+            "Unknown set of always soft consonants "
+            f'"{always_soft_consonants}"')
+
 
     w = WordIterator(word, polish_exceptions=polish_exceptions)
     while w.iterate():
