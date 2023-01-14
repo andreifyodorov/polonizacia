@@ -3,7 +3,7 @@
 from flask import Flask, send_from_directory, request
 import polonizacyja
 
-app = Flask(__name__, static_folder="")
+app = Flask(__name__, static_folder="src")
 
 @app.route("/", methods=['GET'])
 def index_page():
@@ -16,7 +16,7 @@ def send_texts(path):
 @app.route("/trans", methods=['POST'])
 def trans():
     content = request.get_json()
-    return polonizacyja.process(content["text"], **content["flags"])
+    return "".join(polonizacyja.process(content["text"], **content["flags"]))
 
 
 if __name__ == '__main__':
