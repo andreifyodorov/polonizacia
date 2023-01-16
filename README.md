@@ -1,6 +1,6 @@
 # Połonizacyja (opolaczywanije)
 An exercise in applying Polish orthography to Russian language.
-Check [the online version](https://https://polonizacyja.bakunin.nl/).
+Check [the online version](https://polonizacyja.bakunin.nl/).
 
 |слово|słowo|
 |-|-|
